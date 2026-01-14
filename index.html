@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGIT-DEV PAIRING UI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00ff88;
+            --bg-dark: #0a0a0c;
+            --card-bg: #16161a;
+            --text-gray: #a0a0a0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .bg-glow {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: var(--primary);
+            filter: blur(180px);
+            opacity: 0.1;
+            z-index: -1;
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.6rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(0,255,136,0.3);
+        }
+
+        p {
+            color: var(--text-gray);
+            font-size: 0.85rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            background: #232329;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(0,255,136,0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: black;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,255,136,0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result-box {
+            margin-top: 2rem;
+            padding: 20px;
+            background: #000;
+            border: 1px dashed var(--primary);
+            border-radius: 12px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #pairingCode {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            color: var(--primary);
+            letter-spacing: 6px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .loader {
+            border: 2px solid #222;
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .status-msg {
+            font-size: 0.75rem;
+            margin-top: 15px;
+            color: var(--text-gray);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-glow"></div>
+    
+    <div class="container">
+        <h1>SIGIT-DEV PAIRING</h1>
+        <p>Hubungkan Bot Ourin-AI ke WhatsApp Anda</p>
+
+        <div class="input-group">
+            <label for="num">Nomor WhatsApp</label>
+            <input type="number" id="num" placeholder="Contoh: 6285891267541" required>
+        </div>
+
+        <button id="btnPair" onclick="submitNumber()">DAPATKAN KODE</button>
+
+        <div id="status" class="status-msg">
+            <span class="loader"></span> Sedang meminta kode ke Hugging Face...
+        </div>
+
+        <div id="resultBox" class="result-box">
+            <div style="font-size: 0.65rem; color: #888;">SALIN & MASUKKAN KODE INI</div>
+            <div id="pairingCode">--------</div>
+            <p style="font-size: 0.7rem; margin-top: 10px; line-height: 1.4;">
+                Buka WhatsApp > Perangkat Tertaut > Tautkan Perangkat > Tautkan dengan nomor telepon saja.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        async function submitNumber() {
+            const numInput = document.getElementById('num');
+            const btn = document.getElementById('btnPair');
+            const status = document.getElementById('status');
+            const resultBox = document.getElementById('resultBox');
+            const pairingCodeDisplay = document.getElementById('pairingCode');
+
+            const phoneNumber = numInput.value.trim();
+
+            if (!phoneNumber || phoneNumber.length < 10) {
+                alert("Masukkan nomor WhatsApp yang benar (Gunakan kode negara, misal 628xxx)!");
+                return;
+            }
+
+            // UI Loading State
+            btn.disabled = true;
+            status.style.display = "block";
+            resultBox.style.display = "none";
+
+            try {
+                // MENGGUNAKAN DIRECT URL HUGGING FACE KAMU
+                const hfUrl = "https://darkmozd-sigit.hf.space/api/pairing";
+                const response = await fetch(`${hfUrl}?number=${phoneNumber}`);
+                
+                if (!response.ok) throw new Error("Server Hugging Face tidak merespon");
+                
+                const data = await response.json();
+
+                if (data.code) {
+                    pairingCodeDisplay.innerText = data.code;
+                    resultBox.style.display = "block";
+                } else {
+                    throw new Error("Kode tidak ditemukan dalam respon");
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert("Gagal terhubung ke Bot! Pastikan Hugging Face Space berstatus 'Running'.");
+            } finally {
+                btn.disabled = false;
+                status.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
